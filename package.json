@@ -1,0 +1,14 @@
+{
+  "name": "unitalk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "UniTalk - live translator: ngomong -> teks -> terjemahan -> suara",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "dev": "node --watch --env-file-if-exists=.env server/index.js"
+  },
+  "engines": {
+    "node": ">=22.9"
+  }
+}

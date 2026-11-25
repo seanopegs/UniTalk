@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UniTalk — Live Translator</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">Uni<span>Talk</span></div>
+
+      <div class="model">
+        <label for="modelSelect">Model ASR (lokal)</label>
+        <select id="modelSelect"></select>
+        <span id="modelStatus" class="chip">Memuat…</span>
+      </div>
+
+      <label class="toggle"><input type="checkbox" id="autoSpeak" /> Bacakan terjemahan</label>
+    </header>
+
+    <div class="progress-wrap" id="progressWrap" hidden>
+      <progress id="modelProgress" max="1" value="0"></progress>
+      <span id="progressText"></span>
+    </div>
+
+    <div id="banner" class="banner" hidden></div>
+
+    <main class="layout">
+      <section class="panel" data-side="a">
+        <div class="panel__head">
+          <span class="panel__who">Orang A</span>
+          <select class="lang-select" aria-label="Bahasa orang A"></select>
+        </div>
+        <button class="mic" type="button" aria-pressed="false" aria-label="Mulai bicara (Orang A)" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+        </button>
+        <div class="meter" aria-hidden="true"><span></span></div>
+        <p class="status">Menunggu model…</p>
+        <p class="live" aria-live="polite"></p>
+        <form class="typer">
+          <input type="text" placeholder="…atau ketik di sini" autocomplete="off" aria-label="Ketik pesan (Orang A)" />
+          <button type="submit">Kirim</button>
+        </form>
+        <p class="voice-hint" hidden></p>
+      </section>
+
+      <button id="swap" class="swap" type="button" title="Tukar bahasa" aria-label="Tukar bahasa">⇄</button>
+
+      <section class="panel" data-side="b">
+        <div class="panel__head">
+          <span class="panel__who">Orang B</span>
+          <select class="lang-select" aria-label="Bahasa orang B"></select>
+        </div>
+        <button class="mic" type="button" aria-pressed="false" aria-label="Mulai bicara (Orang B)" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+        </button>
+        <div class="meter" aria-hidden="true"><span></span></div>
+        <p class="status">Menunggu model…</p>
+        <p class="live" aria-live="polite"></p>
+        <form class="typer">
+          <input type="text" placeholder="…atau ketik di sini" autocomplete="off" aria-label="Ketik pesan (Orang B)" />
+          <button type="submit">Kirim</button>
+        </form>
+        <p class="voice-hint" hidden></p>
+      </section>
+    </main>
+
+    <section class="conversation">
+      <div class="conversation__head">
+        <h2>Percakapan</h2>
+        <button id="clear" class="btn btn--ghost" type="button">Hapus</button>
+      </div>
+      <div id="messages" class="messages">
+        <p class="empty">Belum ada percakapan. Pilih bahasa, tekan mic, lalu bicara.</p>
+      </div>
+    </section>
+
+    <details class="eval">
+      <summary>Evaluasi &amp; latency</summary>
+      <p id="stats" class="stats">Belum ada data.</p>
+      <div class="eval__row">
+        <button id="exportLog" class="btn" type="button">Unduh log (JSON)</button>
+      </div>
+      <div class="eval__row">
+        <span>Uji pakai file audio (diputar real-time, tanpa mic):</span>
+        <input type="file" id="testFile" accept="audio/*" />
+        <select id="testSide" aria-label="Diputar sebagai">
+          <option value="a">sebagai Orang A</option>
+          <option value="b">sebagai Orang B</option>
+        </select>
+        <button id="runTest" class="btn" type="button">Jalankan</button>
+      </div>
+    </details>
+
+    <footer class="footer">
+      Speech recognition berjalan <strong>lokal di perangkat ini</strong> (Whisper via transformers.js) — audio tidak dikirim ke server.
+    </footer>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

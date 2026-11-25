@@ -1,0 +1,6 @@
+[
+  { "id": "contoh-1", "reference": "speech recognition", "hypothesis": "speech recognition" },
+  { "id": "contoh-2", "reference": "machine learning", "hypothesis": "machine learning" },
+  { "id": "contoh-3", "reference": "artificial intelligence", "hypothesis": "artificial intelligent" },
+  { "id": "contoh-4", "reference": "natural language processing", "hypothesis": "natural processing" }
+]
