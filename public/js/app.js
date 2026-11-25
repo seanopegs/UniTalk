@@ -1,28 +1,35 @@
 // UniTalk — alur utama aplikasi (UI + integrasi).
-//   bicara -> ASR lokal (parsial + final) -> terjemahan -> tampil + dibacakan (TTS)
-// TUGAS 3 (UI/UX & Integrasi) memegang file ini + index.html + css/style.css.
+//   bicara -> ASR lokal (parsial + final) -> terjemahan -> tampil di sisi lawan bicara + dibacakan
+// TUGAS 3 (UI/UX & Integrasi) memegang file ini + index.html + css/style.css + i18n.js.
 
 import { LANGUAGES, getLanguage } from './languages.js';
-import { LocalWhisper, StreamingSession, MODELS, SAMPLE_RATE } from './asr/streaming-asr.js';
+import { LocalWhisper, StreamingSession, SAMPLE_RATE } from './asr/streaming-asr.js';
 import { MicInput, decodeAudioFile, streamSamples } from './asr/audio-input.js';
 import { translate } from './translate.js';
 import { ttsSupported, speak, stopSpeaking, hasVoiceFor, voicesLoaded, onVoicesChanged } from './tts.js';
 import * as metrics from './metrics.js';
+import { t, phrase, UI_LANG } from './i18n.js';
 
 const SIDES = ['a', 'b'];
 const other = (side) => (side === 'a' ? 'b' : 'a');
-const IDLE_STATUS = 'Tekan mic, lalu bicara';
 const $ = (selector, root = document) => root.querySelector(selector);
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const SPEAKER_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+const MODEL_IDS = {
+  fast: 'onnx-community/whisper-tiny',
+  balanced: 'onnx-community/whisper-base',
+  accurate: 'onnx-community/whisper-small',
+};
 
-// ------------------------------------------------------------------ settings
-const STORAGE_KEY = 'unitalk:settings';
+const ICON_SPEAKER =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6.5 9H3v6h3.5L11 19z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a8 8 0 0 1 0 11"/></svg>';
+
+// ------------------------------------------------------------------ pengaturan
+const STORAGE_KEY = 'unitalk:v2';
 const settings = loadSettings();
 
 function loadSettings() {
-  const defaults = { langs: { a: 'en', b: 'id' }, autoSpeak: true, model: 'onnx-community/whisper-tiny' };
+  const defaults = { langs: { a: 'en', b: 'id' }, autoSpeak: true, quality: 'fast', evalMode: false, faceToFace: true };
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     return { ...defaults, ...saved, langs: { ...defaults.langs, ...saved.langs } };
@@ -39,85 +46,99 @@ function saveSettings() {
   }
 }
 
-// ------------------------------------------------------------------ elements
-const people = Object.fromEntries(
+// ------------------------------------------------------------------ elemen
+const halves = Object.fromEntries(
   SIDES.map((side) => {
-    const root = $(`.panel[data-side="${side}"]`);
+    const root = $(`.half[data-side="${side}"]`);
     return [
       side,
       {
-        side,
-        label: side === 'a' ? 'Orang A' : 'Orang B',
-        select: $('.lang-select', root),
+        root,
+        select: $('select', root),
+        greet: $('.greet', root),
+        feed: $('.feed', root),
         mic: $('.mic', root),
-        meter: $('.meter span', root),
-        status: $('.status', root),
-        live: $('.live', root),
-        form: $('.typer', root),
-        input: $('.typer input', root),
-        voiceHint: $('.voice-hint', root),
+        hint: $('.hint', root),
+        live: null, // baris teks parsial (sisi yang bicara)
+        typing: null, // indikator "…" (sisi yang mendengar)
       },
     ];
   }),
 );
 
 const els = {
-  model: $('#modelSelect'),
-  modelStatus: $('#modelStatus'),
-  progressWrap: $('#progressWrap'),
-  progress: $('#modelProgress'),
-  progressText: $('#progressText'),
-  autoSpeak: $('#autoSpeak'),
-  banner: $('#banner'),
+  loader: $('#loader'),
+  loaderText: $('#loaderText'),
+  loaderBar: $('#loaderBar'),
+  loaderSub: $('#loaderSub'),
+  retry: $('#retry'),
   swap: $('#swap'),
-  clear: $('#clear'),
-  messages: $('#messages'),
+  openSettings: $('#openSettings'),
+  settings: $('#settings'),
+  autoSpeak: $('#autoSpeak'),
+  voiceNote: $('#voiceNote'),
+  faceToFace: $('#faceToFace'),
+  evalMode: $('#evalMode'),
+  evalTools: $('#evalTools'),
   stats: $('#stats'),
   exportLog: $('#exportLog'),
   testFile: $('#testFile'),
   testSide: $('#testSide'),
   runTest: $('#runTest'),
+  typeInput: $('#typeInput'),
+  typeSide: $('#typeSide'),
+  typeSend: $('#typeSend'),
 };
 
-const langOf = (side) => getLanguage(people[side].select.value);
+const langOf = (side) => getLanguage(halves[side].select.value);
 
-function setStatus(side, text, isError = false) {
-  const { status } = people[side];
-  status.textContent = text;
-  status.classList.toggle('is-error', isError);
+function setHint(side, text, isError = false) {
+  const { hint } = halves[side];
+  hint.textContent = text;
+  hint.classList.toggle('is-error', isError);
 }
 
-function showBanner(text) {
-  els.banner.textContent = text;
-  els.banner.hidden = false;
+const idleHint = (side) => setHint(side, phrase(langOf(side).code, 'idle'));
+
+function applyLanguage(side) {
+  const h = halves[side];
+  const lang = langOf(side);
+  h.root.lang = lang.speech;
+  h.root.dir = lang.dir ?? 'ltr';
+  h.greet.textContent = phrase(lang.code, 'greet');
+  h.mic.setAttribute('aria-label', phrase(lang.code, 'idle'));
+  if (active?.side !== side) idleHint(side);
+  renderSideOptions();
 }
 
 // ------------------------------------------------------------------ model ASR
 const progressFiles = new Map();
 
-function renderProgress(p) {
+function onProgress(p) {
   if (p.status !== 'progress' || !p.file || !p.total) return;
-  progressFiles.set(p.file, { loaded: p.loaded, total: p.total });
+  progressFiles.set(p.file, p);
   let loaded = 0;
   let total = 0;
   for (const f of progressFiles.values()) {
     loaded += f.loaded;
     total += f.total;
   }
-  els.progress.value = total ? loaded / total : 0;
-  els.progressText.textContent = `Mengunduh model ${(loaded / 1e6).toFixed(0)} / ${(total / 1e6).toFixed(0)} MB (sekali saja, lalu tersimpan di cache)`;
+  els.loaderBar.style.width = `${Math.round((loaded / total) * 100)}%`;
+  els.loaderSub.textContent = t('downloading', Math.round(loaded / 1e6), Math.round(total / 1e6));
 }
 
-const asr = new LocalWhisper({ onProgress: renderProgress });
+const asr = new LocalWhisper({ onProgress });
 let modelReady = false;
 
-function setModelStatus(text, kind = '') {
-  els.modelStatus.textContent = text;
-  els.modelStatus.className = `chip ${kind ? `is-${kind}` : ''}`;
+function showLoader(state) {
+  els.loader.classList.toggle('is-done', state === 'done');
+  els.loader.classList.toggle('is-error', state === 'error');
+  els.loaderText.textContent = state === 'error' ? t('loadFailed') : t('preparing');
+  els.retry.hidden = state !== 'error';
 }
 
 function setMicsEnabled(enabled) {
-  for (const side of SIDES) people[side].mic.disabled = !enabled;
+  for (const side of SIDES) halves[side].mic.disabled = !enabled;
 }
 
 async function loadModel() {
@@ -125,25 +146,17 @@ async function loadModel() {
   modelReady = false;
   setMicsEnabled(false);
   progressFiles.clear();
-  els.progress.value = 0;
-  els.progressText.textContent = 'Menyiapkan model…';
-  els.progressWrap.hidden = false;
-  setModelStatus('Memuat model…');
-  for (const side of SIDES) setStatus(side, 'Menunggu model…');
-
+  els.loaderBar.style.width = '0%';
+  els.loaderSub.textContent = t('firstTime');
+  showLoader('loading');
   try {
-    const info = await asr.load(settings.model);
+    await asr.load(MODEL_IDS[settings.quality] ?? MODEL_IDS.fast);
     modelReady = true;
     setMicsEnabled(true);
-    const device = info.device === 'webgpu' ? 'WebGPU (GPU)' : 'WASM (CPU)';
-    setModelStatus(`Siap · ${device} · lokal`, 'ok');
-    for (const side of SIDES) setStatus(side, IDLE_STATUS);
+    showLoader('done');
   } catch (err) {
     console.error(err);
-    setModelStatus('Gagal memuat model', 'error');
-    showBanner(`Model ASR gagal dimuat: ${err.message}. Cek koneksi internet (untuk unduhan pertama) lalu refresh.`);
-  } finally {
-    els.progressWrap.hidden = true;
+    showLoader('error');
   }
 }
 
@@ -151,56 +164,49 @@ async function loadModel() {
 let active = null; // { side, session, input }
 
 function micErrorMessage(err) {
-  if (err?.name === 'NotAllowedError') return 'Akses mikrofon ditolak. Izinkan mic lewat ikon gembok di address bar.';
-  if (err?.name === 'NotFoundError') return 'Mikrofon tidak ditemukan.';
-  return `Mic error: ${err?.message || err}`;
+  if (err?.name === 'NotAllowedError') return t('micBlocked');
+  if (err?.name === 'NotFoundError') return t('noMic');
+  return t('micError');
 }
 
-function resetMicButton(side) {
-  const p = people[side];
-  p.mic.classList.remove('is-listening');
-  p.mic.setAttribute('aria-pressed', 'false');
-  p.meter.style.width = '0%';
+function resetMic(side) {
+  const { mic } = halves[side];
+  mic.classList.remove('is-listening');
+  mic.setAttribute('aria-pressed', 'false');
+  mic.style.setProperty('--level', '0');
 }
 
 async function startListening(side, source = 'mic', samples = null) {
-  if (!modelReady) {
-    setStatus(side, 'Model belum siap, tunggu sebentar…', true);
-    return;
-  }
+  if (!modelReady) return;
   stopSpeaking();
-  const p = people[side];
+  const h = halves[side];
   const lang = langOf(side);
 
   const session = new StreamingSession(asr, {
     language: lang.whisper,
-    onSpeechStart: () => setStatus(side, 'Mendengar suara…'),
-    onPartial: (text) => {
-      p.live.textContent = text;
-    },
+    onPartial: (text) => showLive(side, text),
     onFinal: (text, asrMetrics) => {
-      p.live.textContent = '';
-      if (active?.side === side) setStatus(side, `Mendengarkan (${lang.label})… tekan lagi untuk berhenti`);
+      clearLive(side);
       handleUtterance(side, text, { ...asrMetrics, input: source });
     },
-    onLevel: (level) => {
-      p.meter.style.width = `${Math.min(100, level * 600)}%`;
+    onLevel: (level) => h.mic.style.setProperty('--level', Math.min(1, level * 8).toFixed(3)),
+    onError: (err) => {
+      console.error(err);
+      setHint(side, t('asrError'), true);
     },
-    onError: (err) => setStatus(side, `ASR error: ${err.message}`, true),
   });
 
   const entry = { side, session, input: null };
   active = entry;
-  p.live.textContent = '';
-  p.mic.classList.add('is-listening');
-  p.mic.setAttribute('aria-pressed', 'true');
-  setStatus(side, source === 'mic' ? `Mendengarkan (${lang.label})… tekan lagi untuk berhenti` : 'Memutar file audio uji…');
+  h.mic.classList.add('is-listening');
+  h.mic.setAttribute('aria-pressed', 'true');
+  setHint(side, phrase(lang.code, 'listening'));
 
   try {
     if (source === 'mic') {
       entry.input = new MicInput();
       await entry.input.start((chunk) => session.pushAudio(chunk));
-      if (active !== entry) await entry.input.stop(); // user sudah menekan stop saat izin mic muncul
+      if (active !== entry) await entry.input.stop(); // sudah di-stop saat izin mic muncul
     } else {
       entry.input = streamSamples(samples, (chunk) => session.pushAudio(chunk));
       entry.input.done.then(() => {
@@ -209,8 +215,8 @@ async function startListening(side, source = 'mic', samples = null) {
     }
   } catch (err) {
     if (active === entry) active = null;
-    resetMicButton(side);
-    setStatus(side, micErrorMessage(err), true);
+    resetMic(side);
+    setHint(side, micErrorMessage(err), true);
   }
 }
 
@@ -218,12 +224,12 @@ async function stopListening() {
   const entry = active;
   if (!entry) return;
   active = null;
-  resetMicButton(entry.side);
+  resetMic(entry.side);
+  setHint(entry.side, phrase(langOf(entry.side).code, 'processing'));
   await entry.input?.stop();
-  setStatus(entry.side, 'Memproses kalimat terakhir…');
   await entry.session.stop();
-  people[entry.side].live.textContent = '';
-  if (active?.side !== entry.side) setStatus(entry.side, modelReady ? IDLE_STATUS : 'Menunggu model…');
+  clearLive(entry.side);
+  if (active?.side !== entry.side) idleHint(entry.side);
 }
 
 async function toggleMic(side) {
@@ -235,17 +241,112 @@ async function toggleMic(side) {
   await startListening(side, 'mic');
 }
 
-// ------------------------------------------------------------------ terjemahan + TTS
+// ------------------------------------------------------------------ percakapan
+function makeLine(kind, text = '') {
+  const el = document.createElement('div');
+  el.className = `line line--${kind}`;
+  const p = document.createElement('p');
+  p.className = 'line__text';
+  p.textContent = text;
+  el.append(p);
+  return { el, text: p };
+}
+
+function makeDots() {
+  const el = document.createElement('div');
+  el.className = 'line line--them';
+  el.innerHTML = '<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>';
+  return el;
+}
+
+function scrollFeed(side) {
+  const { feed } = halves[side];
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function appendLine(side, el) {
+  const h = halves[side];
+  h.greet.hidden = true;
+  h.feed.append(el);
+  scrollFeed(side);
+}
+
+function markLatest(side, el) {
+  halves[side].feed.querySelectorAll('.line--them.is-latest').forEach((x) => x.classList.remove('is-latest'));
+  el.classList.add('is-latest');
+}
+
+function showLive(side, text) {
+  const speaker = halves[side];
+  if (!speaker.live) {
+    speaker.live = makeLine('me');
+    speaker.live.el.classList.add('line--live');
+    appendLine(side, speaker.live.el);
+  }
+  speaker.live.text.textContent = text;
+  scrollFeed(side);
+
+  const listener = halves[other(side)];
+  if (!listener.typing) {
+    listener.typing = makeDots();
+    appendLine(other(side), listener.typing);
+  }
+}
+
+function clearLive(side) {
+  const speaker = halves[side];
+  speaker.live?.el.remove();
+  speaker.live = null;
+  const listener = halves[other(side)];
+  listener.typing?.remove();
+  listener.typing = null;
+}
+
+function formatMetrics(m) {
+  const sec = (ms) => `${(ms / 1000).toFixed(1)} s`;
+  const parts = [];
+  if (typeof m.latencyMs === 'number') parts.push(sec(m.latencyMs));
+  if (typeof m.asrMs === 'number') parts.push(`ASR ${sec(m.asrMs)}`);
+  if (typeof m.rtf === 'number') parts.push(`RTF ${m.rtf}`);
+  if (typeof m.translateMs === 'number') parts.push(`MT ${sec(m.translateMs)}`);
+  return parts.join(' · ');
+}
+
 async function handleUtterance(side, text, asrMetrics = null) {
   const from = langOf(side);
   const to = langOf(other(side));
-  const msg = renderMessage({ side, text, from, to });
+
+  // Sisi pembicara: apa yang dia ucapkan (kecil). Sisi pendengar: terjemahannya (besar).
+  const mine = makeLine('me', text);
+  const meta = document.createElement('span');
+  meta.className = 'line__meta';
+  if (asrMetrics) meta.textContent = formatMetrics(asrMetrics);
+  mine.el.append(meta);
+  appendLine(side, mine.el);
+
+  const theirs = makeLine('them');
+  theirs.text.innerHTML = '<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>';
+  markLatest(other(side), theirs.el);
+  appendLine(other(side), theirs.el);
 
   const t0 = performance.now();
   try {
     const { text: translated, provider } = await translate(text, from.code, to.code);
     const translateMs = Math.round(performance.now() - t0);
-    msg.setTranslation(translated, { ...asrMetrics, translateMs });
+
+    theirs.text.textContent = translated;
+    theirs.text.lang = to.speech;
+    if (ttsSupported) {
+      const play = document.createElement('button');
+      play.type = 'button';
+      play.className = 'line__play';
+      play.innerHTML = ICON_SPEAKER;
+      play.setAttribute('aria-label', t('replay'));
+      play.addEventListener('click', () => speakTranslation(translated, to));
+      theirs.el.append(play);
+    }
+    meta.textContent = formatMetrics({ ...asrMetrics, translateMs });
+    scrollFeed(other(side));
 
     metrics.record({
       side,
@@ -262,16 +363,17 @@ async function handleUtterance(side, text, asrMetrics = null) {
     });
     renderStats();
 
-    if (els.autoSpeak.checked) speakTranslation(translated, to);
+    if (settings.autoSpeak) speakTranslation(translated, to);
   } catch (err) {
-    msg.setError(err.message);
+    console.error(err);
+    theirs.el.classList.add('is-error');
+    theirs.text.textContent = t('translateFailed');
   }
 }
 
-// TTS diantre (satu per satu) dan menunggu pembicara selesai kalimatnya dulu.
+// TTS diantre satu per satu dan menunggu pembicara selesai kalimatnya.
 // Selama TTS bicara, mic dijeda supaya suara terjemahan tidak ikut ditranskripsi.
 let ttsQueue = Promise.resolve();
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function speakTranslation(text, lang) {
   ttsQueue = ttsQueue
@@ -290,101 +392,96 @@ function speakTranslation(text, lang) {
   return ttsQueue;
 }
 
-function formatMetrics(m) {
-  const parts = [];
-  if (typeof m.latencyMs === 'number') parts.push(`latency ${(m.latencyMs / 1000).toFixed(2)} s`);
-  if (typeof m.asrMs === 'number') parts.push(`ASR ${m.asrMs} ms`);
-  if (typeof m.rtf === 'number') parts.push(`RTF ${m.rtf}`);
-  if (typeof m.translateMs === 'number') parts.push(`translate ${m.translateMs} ms`);
-  return parts.join(' · ');
-}
-
-function renderMessage({ side, text, from, to }) {
-  els.messages.querySelector('.empty')?.remove();
-
-  const el = document.createElement('article');
-  el.className = `msg msg--${side}`;
-
-  const meta = document.createElement('div');
-  meta.className = 'msg__meta';
-  meta.textContent = `${people[side].label} · ${from.label} → ${to.label}`;
-
-  const original = document.createElement('p');
-  original.className = 'msg__original';
-  original.lang = from.speech;
-  original.textContent = text;
-
-  const row = document.createElement('div');
-  row.className = 'msg__row';
-  const translation = document.createElement('p');
-  translation.className = 'msg__translation';
-  translation.lang = to.speech;
-  translation.textContent = 'Menerjemahkan…';
-  const play = document.createElement('button');
-  play.type = 'button';
-  play.className = 'msg__play';
-  play.title = 'Putar suara';
-  play.setAttribute('aria-label', 'Putar suara terjemahan');
-  play.innerHTML = SPEAKER_ICON;
-  play.hidden = true;
-  row.append(translation, play);
-
-  const metricsLine = document.createElement('div');
-  metricsLine.className = 'msg__metrics';
-
-  el.append(meta, original, row, metricsLine);
-  els.messages.append(el);
-  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-  return {
-    setTranslation(value, m) {
-      translation.textContent = value;
-      metricsLine.textContent = formatMetrics(m);
-      play.hidden = !ttsSupported;
-      play.onclick = () => speakTranslation(value, to);
-    },
-    setError(message) {
-      el.classList.add('is-error');
-      translation.textContent = `⚠ ${message}`;
-    },
-  };
-}
-
+// ------------------------------------------------------------------ pengaturan & evaluasi
 function renderStats() {
   const s = metrics.summary();
   const sec = (ms) => (ms == null ? '–' : `${(ms / 1000).toFixed(2)} s`);
   els.stats.textContent = s.utterances
-    ? `Kalimat (suara): ${s.utterances} · latency terakhir ${sec(s.lastLatencyMs)} · rata-rata ${sec(s.avgLatencyMs)} · ` +
-      `parsial pertama ${sec(s.avgFirstPartialMs)} · ASR ${sec(s.avgAsrMs)} · RTF ${s.avgRtf?.toFixed(3) ?? '–'} · ` +
-      `translate ${sec(s.avgTranslateMs)}`
-    : 'Belum ada data suara.';
+    ? t('stats', {
+        utterances: s.utterances,
+        latency: sec(s.avgLatencyMs),
+        firstPartial: sec(s.avgFirstPartialMs),
+        rtf: s.avgRtf?.toFixed(2) ?? '–',
+        translate: sec(s.avgTranslateMs),
+      })
+    : t('noStats');
 }
 
-// ------------------------------------------------------------------ voice hints
-function renderVoiceHints() {
-  for (const side of SIDES) {
-    const hint = people[side].voiceHint;
-    const lang = langOf(side);
-    const missing = ttsSupported && voicesLoaded() && !hasVoiceFor(lang.speech);
-    hint.hidden = !missing;
-    hint.textContent = missing ? `Suara TTS ${lang.label} tidak ada di browser ini — terjemahan tetap tampil sebagai teks.` : '';
+function renderVoiceNote() {
+  const missing =
+    ttsSupported && voicesLoaded()
+      ? [...new Set(SIDES.map(langOf))].filter((lang) => !hasVoiceFor(lang.speech)).map((lang) => lang.label)
+      : [];
+  els.voiceNote.hidden = !missing.length;
+  els.voiceNote.textContent = missing.length ? t('noVoice', missing.join(', ')) : '';
+}
+
+function renderSideOptions() {
+  for (const select of [els.testSide, els.typeSide]) {
+    const value = select.value || 'a';
+    select.replaceChildren(...SIDES.map((side) => new Option(`${side.toUpperCase()} · ${langOf(side).label}`, side)));
+    select.value = value;
   }
+}
+
+/** Putar sampel audio (Float32Array 16 kHz) lewat pipeline yang sama seperti mic. */
+async function runSamples(side, samples) {
+  await stopListening();
+  // 1,5 s hening di akhir supaya kalimat terakhir ditutup secara alami.
+  const padded = new Float32Array(samples.length + SAMPLE_RATE * 1.5);
+  padded.set(samples);
+  await startListening(side, 'file', padded);
+}
+
+function sendTyped() {
+  const text = els.typeInput.value.trim();
+  if (!text) return;
+  els.typeInput.value = '';
+  els.settings.close();
+  handleUtterance(els.typeSide.value, text);
 }
 
 // ------------------------------------------------------------------ setup
 function setup() {
-  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-    showBanner('Mikrofon hanya bisa dipakai lewat http://localhost atau HTTPS. Jalankan "npm start" lalu buka http://localhost:3000.');
-  } else if (!window.AudioWorkletNode) {
-    showBanner('Browser ini belum mendukung AudioWorklet. Pakai Google Chrome atau Microsoft Edge versi terbaru.');
+  document.documentElement.lang = UI_LANG;
+  document.querySelectorAll('[data-t]').forEach((el) => {
+    el.textContent = t(el.dataset.t);
+  });
+  document.querySelectorAll('[data-t-label]').forEach((el) => {
+    el.setAttribute('aria-label', t(el.dataset.tLabel));
+    if (el.tagName === 'BUTTON') el.title = t(el.dataset.tLabel);
+  });
+
+  for (const side of SIDES) {
+    const h = halves[side];
+    for (const lang of LANGUAGES) h.select.add(new Option(lang.label, lang.code));
+    h.select.value = settings.langs[side];
+    h.select.addEventListener('change', () => {
+      settings.langs[side] = h.select.value;
+      saveSettings();
+      if (active?.side === side) stopListening(); // bahasa ganti -> sesi baru
+      applyLanguage(side);
+    });
+    h.mic.addEventListener('click', () => toggleMic(side));
+    applyLanguage(side);
   }
 
-  for (const model of MODELS) els.model.add(new Option(model.label, model.id));
-  els.model.value = settings.model;
-  els.model.addEventListener('change', () => {
-    settings.model = els.model.value;
+  els.swap.addEventListener('click', async () => {
+    await stopListening();
+    [halves.a.select.value, halves.b.select.value] = [halves.b.select.value, halves.a.select.value];
+    settings.langs = { a: halves.a.select.value, b: halves.b.select.value };
     saveSettings();
-    loadModel();
+    SIDES.forEach(applyLanguage);
+  });
+
+  // Pengaturan
+  els.openSettings.addEventListener('click', () => {
+    renderStats();
+    renderVoiceNote();
+    els.settings.showModal();
+  });
+  els.settings.addEventListener('click', (event) => {
+    if (event.target === els.settings) els.settings.close(); // klik di luar panel
   });
 
   els.autoSpeak.checked = settings.autoSpeak;
@@ -394,62 +491,61 @@ function setup() {
     if (!settings.autoSpeak) stopSpeaking();
   });
 
-  for (const side of SIDES) {
-    const p = people[side];
-    for (const lang of LANGUAGES) p.select.add(new Option(lang.label, lang.code));
-    p.select.value = settings.langs[side];
-    p.select.addEventListener('change', () => {
-      settings.langs[side] = p.select.value;
+  for (const input of document.querySelectorAll('input[name="quality"]')) {
+    input.checked = input.value === settings.quality;
+    input.addEventListener('change', () => {
+      settings.quality = input.value;
       saveSettings();
-      renderVoiceHints();
-      if (active?.side === side) stopListening(); // bahasa ganti -> mulai sesi baru
-    });
-    p.mic.addEventListener('click', () => toggleMic(side));
-    p.form.addEventListener('submit', (event) => {
-      event.preventDefault();
-      const text = p.input.value.trim();
-      if (!text) return;
-      p.input.value = '';
-      handleUtterance(side, text);
+      els.settings.close();
+      loadModel();
     });
   }
 
-  els.swap.addEventListener('click', async () => {
-    await stopListening();
-    [people.a.select.value, people.b.select.value] = [people.b.select.value, people.a.select.value];
-    settings.langs = { a: people.a.select.value, b: people.b.select.value };
+  const applyFace = () => document.body.classList.toggle('face', settings.faceToFace);
+  els.faceToFace.checked = settings.faceToFace;
+  els.faceToFace.addEventListener('change', () => {
+    settings.faceToFace = els.faceToFace.checked;
     saveSettings();
-    renderVoiceHints();
+    applyFace();
   });
+  applyFace();
 
-  els.clear.addEventListener('click', () => {
-    els.messages.innerHTML = '<p class="empty">Belum ada percakapan. Pilih bahasa, tekan mic, lalu bicara.</p>';
+  const applyEval = () => {
+    document.body.classList.toggle('eval', settings.evalMode);
+    els.evalTools.hidden = !settings.evalMode;
+  };
+  els.evalMode.checked = settings.evalMode;
+  els.evalMode.addEventListener('change', () => {
+    settings.evalMode = els.evalMode.checked;
+    saveSettings();
+    applyEval();
   });
+  applyEval();
 
   els.exportLog.addEventListener('click', () => metrics.downloadJson());
-
   els.runTest.addEventListener('click', async () => {
     const file = els.testFile.files?.[0];
-    const side = els.testSide.value;
-    if (!file) {
-      setStatus(side, 'Pilih file audio dulu di panel Evaluasi.', true);
-      return;
+    if (!file) return;
+    els.settings.close();
+    await runSamples(els.testSide.value, await decodeAudioFile(file));
+  });
+  els.typeSend.addEventListener('click', sendTyped);
+  els.typeInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault(); // jangan sampai form dialog tertutup
+      sendTyped();
     }
-    await runSamples(side, await decodeAudioFile(file));
   });
 
-  onVoicesChanged(renderVoiceHints);
-  renderVoiceHints();
-  loadModel();
-}
+  els.retry.addEventListener('click', loadModel);
+  onVoicesChanged(renderVoiceNote);
+  renderSideOptions();
 
-/** Putar sampel audio (Float32Array 16 kHz) lewat pipeline yang sama seperti mic. */
-async function runSamples(side, samples) {
-  await stopListening();
-  // Tambah 1,5 s hening di akhir supaya endpoint kalimat terakhir terdeteksi secara alami.
-  const padded = new Float32Array(samples.length + SAMPLE_RATE * 1.5);
-  padded.set(samples);
-  await startListening(side, 'file', padded);
+  loadModel().then(() => {
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      for (const side of SIDES) setHint(side, t('needLocalhost'), true);
+    }
+  });
 }
 
 // Hook kecil untuk debugging / eksperimen dari DevTools console.

@@ -23,20 +23,24 @@ npm start
 
 Buka **http://localhost:3000** → tunggu model selesai dimuat (pertama kali mengunduh ±120 MB untuk whisper-tiny / ±210 MB untuk base, setelah itu tersimpan di cache browser) → izinkan mikrofon.
 
-Model default **whisper-tiny** (paling cepat, cukup untuk bahasa Inggris). Untuk Bahasa Indonesia coba **base/small** lewat dropdown di atas (lebih akurat, tapi lebih lambat).
+Cara pakai (dibuat sesimpel mungkin untuk orang awam):
+1. Layar dibagi dua, satu sisi untuk tiap orang. Di HP, sisi atas otomatis diputar menghadap lawan bicara (HP ditaruh di meja, di tengah).
+2. Pilih bahasa di bagian atas masing-masing sisi.
+3. Ketuk mic → bicara. Teks parsial muncul di sisi pembicara; sisi lawan bicara menampilkan "…".
+4. Begitu ada jeda ±0,8 detik, kalimat ditutup → terjemahannya muncul **besar** di sisi lawan bicara dan dibacakan.
+5. Ketuk mic lagi untuk berhenti.
 
-Cara pakai:
-1. Pilih bahasa **Orang A** dan **Orang B**.
-2. Tekan mic orang yang mau bicara → bicara. Teks parsial muncul saat masih bicara.
-3. Begitu ada jeda ±0,8 detik, kalimat ditutup → diterjemahkan → dibacakan untuk lawan bicara.
-4. Tekan mic lagi untuk berhenti. Bisa juga **mengetik** di kolom bawah mic (untuk tes tanpa mic).
+Semua hal teknis ada di **Pengaturan** (ikon slider di tengah):
+- **Pengenalan suara**: Cepat (whisper-tiny, default) · Seimbang (base) · Akurat (small). Untuk Bahasa Indonesia sebaiknya Seimbang/Akurat.
+- **Mode evaluasi**: menampilkan latency/ASR/RTF di bawah tiap kalimat + alat uji (lihat di bawah).
+- Bacakan terjemahan, tampilan berhadapan (HP).
 
-Mode pengembangan (auto-restart server saat file server berubah): `npm run dev`.
+Bahasa antarmuka mengikuti bahasa browser (Indonesia / English). Mode pengembangan (auto-restart server): `npm run dev`.
 
 ### Tes tanpa mic (untuk eksperimen)
-Buka panel **Evaluasi & latency** di bawah → pilih file audio (`.wav`/`.mp3`) → **Jalankan**.
+Pengaturan → nyalakan **Mode evaluasi** → **Uji file audio** → pilih file (`.wav`/`.mp3`) dan sisi A/B → **Jalankan**.
 File diputar dengan kecepatan real-time lewat pipeline yang **sama persis** dengan mic, jadi hasilnya bisa diulang (cocok untuk eksperimen noise, aksen, kecepatan bicara, dll).
-Tombol **Unduh log (JSON)** menyimpan transkrip + latency tiap kalimat → bahan evaluasi (lihat `eval/`).
+**Unduh log** menyimpan transkrip + latency tiap kalimat → bahan evaluasi (lihat `eval/`). Ada juga **Ketik kalimat uji** untuk mengetes terjemahan tanpa suara.
 
 ---
 
@@ -69,6 +73,7 @@ Metrik yang dicatat per kalimat (lihat `public/js/metrics.js`):
 ```
 public/
   index.html, css/style.css, js/app.js   UI + alur aplikasi                 (Tugas 3)
+  js/i18n.js                             teks antarmuka per bahasa          (Tugas 3)
   js/asr/streaming-asr.js                streaming: VAD, parsial, final      (Tugas 1)
   js/asr/asr-worker.js                   Whisper lokal (transformers.js)     (Tugas 1)
   js/asr/audio-input.js, audio-processor.js   mic & file audio                (Tugas 1)

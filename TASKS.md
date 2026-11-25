@@ -1,28 +1,28 @@
 # Pembagian Tugas UniTalk (5 orang)
 
-Masing-masing ambil **1 tugas**. Tugas dibagi berdasarkan bagian rubrik penilaian di guide, jadi setiap bagian nilai ada penanggung jawabnya.
+Tugas dibagi berdasarkan bagian rubrik penilaian di guide, jadi setiap bagian nilai ada penanggung jawabnya.
 Tiap tugas punya **file sendiri**, jadi bisa dikerjakan paralel tanpa saling tabrakan.
 
-| # | Tugas | Bobot rubrik terkait | File utama | Bisa mulai sekarang? |
+| # | Tugas | PIC | Bobot rubrik terkait | File utama |
 |---|---|---|---|---|
-| 1 | ASR Engine (real-time & lokal) | Real-Time App 30% · Fundamentals 15% | `public/js/asr/*` | ✅ |
-| 2 | Translation & Text-to-Speech | Real-Time App 30% | `server/translate.js`, `public/js/translate.js`, `public/js/tts.js` | ✅ |
-| 3 | Aplikasi, UI/UX & Integrasi | Real-Time App 30% · usability | `public/index.html`, `public/css/`, `public/js/app.js`, `server/index.js` | ✅ |
-| 4 | Technical Evaluation (WER, latency, eksperimen) | Experimental Workflow & Technical Eval 20% | `eval/`, `public/js/metrics.js` | ✅ mulai susun & rekam dataset |
-| 5 | Problem, Target User, User Testing & Laporan | Real-World Problem 5% · System Analysis & User Eval 20% | `docs/` | ✅ **paling mendesak** |
+| 1 | ASR Engine (real-time & lokal) | **Jeremy** | Real-Time App 30% · Fundamentals 15% | `public/js/asr/*` |
+| 2 | Translation & Text-to-Speech | **Josea** | Real-Time App 30% | `server/translate.js`, `public/js/translate.js`, `public/js/tts.js` |
+| 3 | Aplikasi, UI/UX & Integrasi | **Jonathan** | Real-Time App 30% · usability | `public/index.html`, `public/css/`, `public/js/app.js`, `public/js/i18n.js`, `server/index.js` |
+| 4 | Technical Evaluation (WER, latency, eksperimen) | **Oslando** | Experimental Workflow & Technical Eval 20% | `eval/`, `public/js/metrics.js` |
+| 5 | Problem, Target User, User Testing & Laporan | **Dennis** | Real-World Problem 5% · System Analysis & User Eval 20% | `docs/` |
 
 > **Keputusan pertama (semua orang):** tentukan **real problem + target user** bareng-bareng (dipimpin Tugas 5). Ini menentukan bahasa, skenario UI, dan kondisi eksperimen.
 
 ---
 
-## Tugas 1 — ASR Engine (Real-time & Lokal)
+## Tugas 1 — ASR Engine (Real-time & Lokal) · Jeremy
 
 **Tujuan:** speech recognition lokal yang cepat, akurat, dan terasa real-time.
 
 Yang dikerjakan:
 - [ ] Pahami & tulis cara kerja Whisper (log-Mel spectrogram, encoder–decoder Transformer, jendela 30 detik, tokenizer) → bahan bab *Speech Recognition Fundamentals* di laporan.
 - [ ] **Turunkan latency** (sekarang ±2–4 s dengan tiny, ±3–6 s dengan base):
-  - bandingkan whisper tiny / base / small × WebGPU / WASM (dropdown model sudah ada),
+  - bandingkan whisper tiny / base / small × WebGPU / WASM (pilihan model ada di Pengaturan),
   - tuning `silenceMs`, `partialIntervalMs` di `DEFAULT_CONFIG`,
   - cegah transkripsi parsial menghambat transkripsi final.
 - [ ] **Stabilkan teks parsial** supaya tidak "berubah-ubah", misalnya dengan *LocalAgreement*: hanya tampilkan kata yang sama di 2 parsial berturut-turut.
@@ -35,7 +35,7 @@ Yang dikerjakan:
 
 ---
 
-## Tugas 2 — Translation & Text-to-Speech
+## Tugas 2 — Translation & Text-to-Speech · Josea
 
 **Tujuan:** terjemahan yang benar & cepat, dan suara yang jelas di kedua bahasa.
 
@@ -53,16 +53,22 @@ Yang dikerjakan:
 
 ---
 
-## Tugas 3 — Aplikasi, UI/UX & Integrasi
+## Tugas 3 — Aplikasi, UI/UX & Integrasi · Jonathan
 
-**Tujuan:** aplikasi yang enak dipakai target user dalam situasi nyata.
+**Tujuan:** aplikasi yang enak dipakai orang awam dalam situasi nyata. Prinsipnya: sedikit teks, satu tombol per orang, hal teknis disembunyikan di Pengaturan.
+
+Sudah ada (dasar):
+- [x] Layar dibagi dua per orang; di HP sisi atas diputar 180° (mode berhadapan).
+- [x] Terjemahan tampil besar di sisi pendengar; ucapan sendiri kecil di sisi pembicara.
+- [x] Indikator: mic merah + cincin level suara saat merekam, "…" di sisi pendengar, teks parsial dengan titik merah.
+- [x] Pengaturan: bacakan terjemahan, kualitas pengenalan suara, tampilan berhadapan, mode evaluasi (latency per kalimat).
+- [x] Teks antarmuka mengikuti bahasa yang dipilih (sapaan & petunjuk) dan bahasa browser (pengaturan).
 
 Yang dikerjakan:
-- [ ] Sesuaikan UI dengan skenario target user. Contoh: **mode tatap muka** (HP di tengah meja, panel Orang B diputar 180°), teks besar, satu tombol.
-- [ ] Indikator jelas: Recording/Listening, latency, status (lihat contoh UI di guide §10).
-- [ ] Responsive di HP; (opsional) PWA supaya bisa di-install. Catatan: mic di HP butuh HTTPS, jadi perlu deploy atau tunnel.
-- [ ] Error handling: mic ditolak, model gagal dimuat, internet putus, kuota terjemahan habis.
-- [ ] Riwayat percakapan, tombol salin, ukuran font.
+- [ ] Uji tampilan dengan target user asli dan perbaiki yang membingungkan (bareng Tugas 5).
+- [ ] Coba di HP sungguhan. Mic di HP butuh HTTPS, jadi perlu deploy atau tunnel (opsional: PWA supaya bisa di-install).
+- [ ] Error handling yang lebih lengkap: internet putus, kuota terjemahan habis, model gagal dimuat di HP.
+- [ ] Riwayat percakapan (hapus/salin) kalau memang dibutuhkan user. Jangan menambah fitur yang tidak diminta user.
 - [ ] Integrasi hasil Tugas 1 & 2 dan pastikan `main` selalu bisa jalan.
 - [ ] Ambil **screenshot** untuk laporan (Required Evidence §16).
 
@@ -70,7 +76,7 @@ Yang dikerjakan:
 
 ---
 
-## Tugas 4 — Technical Evaluation (Eksperimen, WER, Latency)
+## Tugas 4 — Technical Evaluation (Eksperimen, WER, Latency) · Oslando
 
 **Tujuan:** menjawab *"How accurate is the system?"* dan *"How responsive is the system?"* dengan data asli.
 
@@ -78,7 +84,7 @@ Yang dikerjakan:
 - [ ] Susun **dataset uji**: ±20–30 kalimat EN & ID sesuai skenario target user, beserta teks referensinya.
 - [ ] Rekam oleh beberapa pembicara (minta izin). Simpan file audio + `reference`.
 - [ ] **Baseline** (suara bersih, mic laptop) + **minimal 1 kondisi** yang relevan dengan target user: noise (kantin/jalan), aksen, kecepatan bicara, mic HP, dll.
-- [ ] Jalankan lewat panel **Evaluasi → Uji pakai file audio** → **Unduh log** → tambahkan `reference` → `node eval/wer.js log.json`.
+- [ ] Jalankan lewat **Pengaturan → Mode evaluasi → Uji file audio** → **Unduh log** → tambahkan `reference` → `node eval/wer.js log.json`.
 - [ ] Ukur & bandingkan: WER/CER, latency, first partial, RTF; antar model (tiny/base/small) & device (WebGPU/WASM).
 - [ ] **Error analysis**: tabel *Reference / Output / Error type* (otomatis dari `wer.js`) + pola error (nama orang, istilah teknis, aksen, noise).
 - [ ] Buat tabel & grafik untuk laporan.
@@ -88,7 +94,7 @@ Yang dikerjakan:
 
 ---
 
-## Tugas 5 — Problem, Target User, User Testing & Laporan
+## Tugas 5 — Problem, Target User, User Testing & Laporan · Dennis
 
 **Tujuan:** membuktikan aplikasi benar-benar menyelesaikan masalah nyata untuk user nyata.
 

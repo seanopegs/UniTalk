@@ -2,101 +2,127 @@
 <html lang="id">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>UniTalk — Live Translator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)" />
+    <title>UniTalk</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="css/style.css" />
   </head>
-  <body>
-    <header class="topbar">
-      <div class="brand">Uni<span>Talk</span></div>
-
-      <div class="model">
-        <label for="modelSelect">Model ASR (lokal)</label>
-        <select id="modelSelect"></select>
-        <span id="modelStatus" class="chip">Memuat…</span>
-      </div>
-
-      <label class="toggle"><input type="checkbox" id="autoSpeak" /> Bacakan terjemahan</label>
-    </header>
-
-    <div class="progress-wrap" id="progressWrap" hidden>
-      <progress id="modelProgress" max="1" value="0"></progress>
-      <span id="progressText"></span>
-    </div>
-
-    <div id="banner" class="banner" hidden></div>
-
-    <main class="layout">
-      <section class="panel" data-side="a">
-        <div class="panel__head">
-          <span class="panel__who">Orang A</span>
-          <select class="lang-select" aria-label="Bahasa orang A"></select>
+  <body class="face">
+    <main class="stage">
+      <!-- Orang B: di HP diputar 180° supaya menghadap lawan bicara -->
+      <section class="half" data-side="b">
+        <div class="half__top">
+          <label class="lang">
+            <select data-t-label="language"></select>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+          </label>
         </div>
-        <button class="mic" type="button" aria-pressed="false" aria-label="Mulai bicara (Orang A)" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
-        </button>
-        <div class="meter" aria-hidden="true"><span></span></div>
-        <p class="status">Menunggu model…</p>
-        <p class="live" aria-live="polite"></p>
-        <form class="typer">
-          <input type="text" placeholder="…atau ketik di sini" autocomplete="off" aria-label="Ketik pesan (Orang A)" />
-          <button type="submit">Kirim</button>
-        </form>
-        <p class="voice-hint" hidden></p>
+        <p class="greet" aria-hidden="true"></p>
+        <div class="feed" aria-live="polite"></div>
+        <div class="half__foot">
+          <button class="mic" type="button" aria-pressed="false" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0" /><path d="M12 17.5V21" /></svg>
+          </button>
+          <p class="hint"></p>
+        </div>
       </section>
 
-      <button id="swap" class="swap" type="button" title="Tukar bahasa" aria-label="Tukar bahasa">⇄</button>
-
-      <section class="panel" data-side="b">
-        <div class="panel__head">
-          <span class="panel__who">Orang B</span>
-          <select class="lang-select" aria-label="Bahasa orang B"></select>
-        </div>
-        <button class="mic" type="button" aria-pressed="false" aria-label="Mulai bicara (Orang B)" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+      <nav class="divider">
+        <span class="brand">UniTalk</span>
+        <button class="icon-btn" id="swap" type="button" data-t-label="swap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3 8l4 4" /><path d="M3 8h14" /><path d="m17 20 4-4-4-4" /><path d="M21 16H7" /></svg>
         </button>
-        <div class="meter" aria-hidden="true"><span></span></div>
-        <p class="status">Menunggu model…</p>
-        <p class="live" aria-live="polite"></p>
-        <form class="typer">
-          <input type="text" placeholder="…atau ketik di sini" autocomplete="off" aria-label="Ketik pesan (Orang B)" />
-          <button type="submit">Kirim</button>
-        </form>
-        <p class="voice-hint" hidden></p>
+        <button class="icon-btn" id="openSettings" type="button" data-t-label="settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10" /><path d="M18 7h2" /><circle cx="16" cy="7" r="2" /><path d="M4 17h2" /><path d="M10 17h10" /><circle cx="8" cy="17" r="2" /></svg>
+        </button>
+      </nav>
+
+      <!-- Orang A -->
+      <section class="half" data-side="a">
+        <div class="half__top">
+          <label class="lang">
+            <select data-t-label="language"></select>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+          </label>
+        </div>
+        <p class="greet" aria-hidden="true"></p>
+        <div class="feed" aria-live="polite"></div>
+        <div class="half__foot">
+          <button class="mic" type="button" aria-pressed="false" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0" /><path d="M12 17.5V21" /></svg>
+          </button>
+          <p class="hint"></p>
+        </div>
       </section>
     </main>
 
-    <section class="conversation">
-      <div class="conversation__head">
-        <h2>Percakapan</h2>
-        <button id="clear" class="btn btn--ghost" type="button">Hapus</button>
+    <div class="loader" id="loader" role="status">
+      <div class="loader__box">
+        <p class="wordmark">UniTalk</p>
+        <p class="loader__text" id="loaderText"></p>
+        <div class="bar"><span id="loaderBar"></span></div>
+        <p class="loader__sub" id="loaderSub"></p>
+        <button class="btn" id="retry" type="button" data-t="retry" hidden></button>
       </div>
-      <div id="messages" class="messages">
-        <p class="empty">Belum ada percakapan. Pilih bahasa, tekan mic, lalu bicara.</p>
-      </div>
-    </section>
+    </div>
 
-    <details class="eval">
-      <summary>Evaluasi &amp; latency</summary>
-      <p id="stats" class="stats">Belum ada data.</p>
-      <div class="eval__row">
-        <button id="exportLog" class="btn" type="button">Unduh log (JSON)</button>
-      </div>
-      <div class="eval__row">
-        <span>Uji pakai file audio (diputar real-time, tanpa mic):</span>
-        <input type="file" id="testFile" accept="audio/*" />
-        <select id="testSide" aria-label="Diputar sebagai">
-          <option value="a">sebagai Orang A</option>
-          <option value="b">sebagai Orang B</option>
-        </select>
-        <button id="runTest" class="btn" type="button">Jalankan</button>
-      </div>
-    </details>
+    <dialog class="sheet" id="settings">
+      <form method="dialog">
+        <div class="sheet__head">
+          <h2 data-t="settings"></h2>
+          <button class="icon-btn" value="close" data-t-label="close">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
+          </button>
+        </div>
 
-    <footer class="footer">
-      Speech recognition berjalan <strong>lokal di perangkat ini</strong> (Whisper via transformers.js) — audio tidak dikirim ke server.
-    </footer>
+        <label class="setting">
+          <span data-t="readAloud"></span>
+          <input class="switch" type="checkbox" role="switch" id="autoSpeak" />
+        </label>
+        <p class="setting__note" id="voiceNote" hidden></p>
+
+        <div class="setting setting--stack">
+          <span data-t="recognition"></span>
+          <div class="segmented" role="radiogroup">
+            <label><input type="radio" name="quality" value="fast" /><span data-t="fast"></span></label>
+            <label><input type="radio" name="quality" value="balanced" /><span data-t="balanced"></span></label>
+            <label><input type="radio" name="quality" value="accurate" /><span data-t="accurate"></span></label>
+          </div>
+          <p class="setting__note" data-t="privacy"></p>
+        </div>
+
+        <label class="setting only-narrow">
+          <span data-t="faceToFace"></span>
+          <input class="switch" type="checkbox" role="switch" id="faceToFace" />
+        </label>
+
+        <label class="setting">
+          <span data-t="evalMode"></span>
+          <input class="switch" type="checkbox" role="switch" id="evalMode" />
+        </label>
+
+        <div class="eval" id="evalTools" hidden>
+          <p class="eval__stats" id="stats"></p>
+          <button class="btn" id="exportLog" type="button" data-t="exportLog"></button>
+
+          <p class="eval__label" data-t="testAudio"></p>
+          <div class="eval__row">
+            <input type="file" id="testFile" accept="audio/*" />
+            <select class="side-select" id="testSide"></select>
+            <button class="btn" id="runTest" type="button" data-t="run"></button>
+          </div>
+
+          <p class="eval__label" data-t="typeTest"></p>
+          <div class="eval__row">
+            <input class="field" type="text" id="typeInput" autocomplete="off" />
+            <select class="side-select" id="typeSide"></select>
+            <button class="btn" id="typeSend" type="button" data-t="send"></button>
+          </div>
+        </div>
+      </form>
+    </dialog>
 
     <script type="module" src="js/app.js"></script>
   </body>
