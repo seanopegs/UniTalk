@@ -1,21 +1,21 @@
-# Pembagian Tugas UniTalk (5 orang)
+# Pembagian Tugas UniTalk — Kelompok 4 (5 orang)
 
 Tugas dibagi berdasarkan bagian rubrik penilaian di guide, jadi setiap bagian nilai ada penanggung jawabnya.
 Tiap tugas punya **file sendiri**, jadi bisa dikerjakan paralel tanpa saling tabrakan.
 
 | # | Tugas | PIC | Bobot rubrik terkait | File utama |
 |---|---|---|---|---|
-| 1 | ASR Engine (real-time & lokal) | **Jeremy** | Real-Time App 30% · Fundamentals 15% | `public/js/asr/*` |
-| 2 | Translation & Text-to-Speech | **Josea** | Real-Time App 30% | `server/translate.js`, `public/js/translate.js`, `public/js/tts.js` |
-| 3 | Aplikasi, UI/UX & Integrasi | **Jonathan** | Real-Time App 30% · usability | `public/index.html`, `public/css/`, `public/js/app.js`, `public/js/i18n.js`, `server/index.js` |
-| 4 | Technical Evaluation (WER, latency, eksperimen) | **Oslando** | Experimental Workflow & Technical Eval 20% | `eval/`, `public/js/metrics.js` |
-| 5 | Problem, Target User, User Testing & Laporan | **Dennis** | Real-World Problem 5% · System Analysis & User Eval 20% | `docs/` |
+| 1 | ASR Engine (real-time & lokal) | **Sean Jeremy Henry Sihombing** | Real-Time App 30% · Fundamentals 15% | `public/js/asr/*` |
+| 2 | Translation & Text-to-Speech | **Josea Immanuel Dihardja** | Real-Time App 30% | `server/translate.js`, `public/js/translate.js`, `public/js/tts.js` |
+| 3 | Aplikasi, UI/UX & Integrasi | **Jonathan Felix** | Real-Time App 30% · usability | `public/index.html`, `public/css/`, `public/js/app.js`, `public/js/i18n.js`, `server/index.js` |
+| 4 | Technical Evaluation (WER, latency, eksperimen) | **Oslando Fristian Sipayung** | Experimental Workflow & Technical Eval 20% | `eval/`, `public/js/metrics.js` |
+| 5 | Problem, Target User, User Testing & Laporan | **Dennis Marchello** | Real-World Problem 5% · System Analysis & User Eval 20% | `docs/` |
 
 > **Keputusan pertama (semua orang):** tentukan **real problem + target user** bareng-bareng (dipimpin Tugas 5). Ini menentukan bahasa, skenario UI, dan kondisi eksperimen.
 
 ---
 
-## Tugas 1 — ASR Engine (Real-time & Lokal) · Jeremy
+## Tugas 1 — ASR Engine (Real-time & Lokal) · Sean Jeremy Henry Sihombing
 
 **Tujuan:** speech recognition lokal yang cepat, akurat, dan terasa real-time.
 
@@ -35,7 +35,7 @@ Yang dikerjakan:
 
 ---
 
-## Tugas 2 — Translation & Text-to-Speech · Josea
+## Tugas 2 — Translation & Text-to-Speech · Josea Immanuel Dihardja
 
 **Tujuan:** terjemahan yang benar & cepat, dan suara yang jelas di kedua bahasa.
 
@@ -53,7 +53,7 @@ Yang dikerjakan:
 
 ---
 
-## Tugas 3 — Aplikasi, UI/UX & Integrasi · Jonathan
+## Tugas 3 — Aplikasi, UI/UX & Integrasi · Jonathan Felix
 
 **Tujuan:** aplikasi yang enak dipakai orang awam dalam situasi nyata. Prinsipnya: sedikit teks, satu tombol per orang, hal teknis disembunyikan di Pengaturan.
 
@@ -76,7 +76,7 @@ Yang dikerjakan:
 
 ---
 
-## Tugas 4 — Technical Evaluation (Eksperimen, WER, Latency) · Oslando
+## Tugas 4 — Technical Evaluation (Eksperimen, WER, Latency) · Oslando Fristian Sipayung
 
 **Tujuan:** menjawab *"How accurate is the system?"* dan *"How responsive is the system?"* dengan data asli.
 
@@ -94,7 +94,7 @@ Yang dikerjakan:
 
 ---
 
-## Tugas 5 — Problem, Target User, User Testing & Laporan · Dennis
+## Tugas 5 — Problem, Target User, User Testing & Laporan · Dennis Marchello
 
 **Tujuan:** membuktikan aplikasi benar-benar menyelesaikan masalah nyata untuk user nyata.
 
