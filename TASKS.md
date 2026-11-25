@@ -27,7 +27,8 @@ Yang dikerjakan:
   - cegah transkripsi parsial menghambat transkripsi final.
 - [ ] **Stabilkan teks parsial** supaya tidak "berubah-ubah", misalnya dengan *LocalAgreement*: hanya tampilkan kata yang sama di 2 parsial berturut-turut.
 - [ ] Ganti VAD energi dengan **Silero VAD (ONNX)** supaya lebih tahan noise.
-- [ ] Uji **Bahasa Indonesia** dengan suara asli. Kalau WER jelek, cari model Whisper yang di-fine-tune untuk Indonesia (Hugging Face, format ONNX).
+- [ ] Uji **bahasa selain Inggris** dengan suara asli (mulai dari Indonesia, lalu bahasa yang dipakai target user). Kalau WER jelek, coba model yang lebih besar atau model Whisper yang di-fine-tune untuk bahasa itu (Hugging Face, format ONNX).
+- [ ] Tambah bahasa di `public/js/languages.js` (Whisper mendukung ±99 bahasa), prioritaskan bahasa asal mahasiswa internasional di BINUS.
 - [ ] (Opsional) Kalau browser terlalu lambat di laptop tim, siapkan alternatif backend Python (`faster-whisper` + WebSocket). Tetap lokal.
 
 **Selesai kalau:** teks parsial muncul ≤ 1 s setelah mulai bicara, latency akhir bicara → teks final ≤ ±1,5 s di laptop tim, dan tidak ada API STT eksternal.
@@ -48,7 +49,7 @@ Yang dikerjakan:
 - [ ] TTS: pastikan suara Indonesia ada di Chrome & Edge; tambah pilihan suara/kecepatan; pecah kalimat panjang.
 - [ ] **Tanya dosen**: boleh tidak terjemahan/TTS pakai API eksternal (yang dilarang di guide hanya speech recognition).
 
-**Selesai kalau:** ≥ 90% kalimat uji EN↔ID diterjemahkan benar, terjemahan < 1 s, dan TTS Indonesia jalan di Chrome & Edge.
+**Selesai kalau:** ≥ 90% kalimat uji diterjemahkan benar untuk pasangan bahasa utama (EN↔ID + minimal 2 bahasa lain), terjemahan < 1 s, dan tiap bahasa punya suara TTS di Chrome & Edge (atau tampil sebagai teks kalau tidak ada).
 **Kontrak:** `translate(text, from, to) → { text, provider }`, `speak(text, lang) → Promise`.
 
 ---
@@ -81,7 +82,7 @@ Yang dikerjakan:
 **Tujuan:** menjawab *"How accurate is the system?"* dan *"How responsive is the system?"* dengan data asli.
 
 Yang dikerjakan:
-- [ ] Susun **dataset uji**: ±20–30 kalimat EN & ID sesuai skenario target user, beserta teks referensinya.
+- [ ] Susun **dataset uji**: ±20–30 kalimat per bahasa (minimal EN & ID, plus bahasa lain yang dipakai target user) sesuai skenario, beserta teks referensinya.
 - [ ] Rekam oleh beberapa pembicara (minta izin). Simpan file audio + `reference`.
 - [ ] **Baseline** (suara bersih, mic laptop) + **minimal 1 kondisi** yang relevan dengan target user: noise (kantin/jalan), aksen, kecepatan bicara, mic HP, dll.
 - [ ] Jalankan lewat **Pengaturan → Mode evaluasi → Uji file audio** → **Unduh log** → tambahkan `reference` → `node eval/wer.js log.json`.

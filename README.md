@@ -4,7 +4,7 @@ Final Project **COMP6822001 Speech Recognition** (BINUS).
 
 Dua orang dengan bahasa berbeda bisa ngobrol langsung:
 **bicara → speech recognition lokal real-time (teks parsial muncul saat masih bicara) → terjemahan → tampil di layar + dibacakan** dalam bahasa lawan bicara.
-Prototype ini mulai dari **English ↔ Bahasa Indonesia** (bahasa lain sudah ada di dropdown).
+Targetnya **semua bahasa**: tiap orang memilih bahasanya sendiri. Saat ini sudah ada 10 bahasa (English, Indonesia, Melayu, 日本語, 한국어, 中文, العربية, Español, Français, Deutsch), dan Whisper sendiri mendukung ±99 bahasa, jadi daftar ini bisa terus ditambah (`public/js/languages.js`). Yang sudah diuji baru **English → Indonesia**.
 
 > ⚠️ Sesuai guide (§11), **speech recognition wajib jalan lokal**. Di UniTalk, ASR memakai model **Whisper (ONNX)** yang berjalan **di browser pengguna** lewat transformers.js (WebGPU / WASM). Audio **tidak dikirim** ke API speech recognition mana pun.
 
@@ -31,7 +31,7 @@ Cara pakai (dibuat sesimpel mungkin untuk orang awam):
 5. Ketuk mic lagi untuk berhenti.
 
 Semua hal teknis ada di **Pengaturan** (ikon slider di tengah):
-- **Pengenalan suara**: Cepat (whisper-tiny, default) · Seimbang (base) · Akurat (small). Untuk Bahasa Indonesia sebaiknya Seimbang/Akurat.
+- **Pengenalan suara**: Cepat (whisper-tiny, default) · Seimbang (base) · Akurat (small). Untuk bahasa selain Inggris sebaiknya Seimbang/Akurat.
 - **Mode evaluasi**: menampilkan latency/ASR/RTF di bawah tiap kalimat + alat uji (lihat di bawah).
 - Bacakan terjemahan, tampilan berhadapan (HP).
 
@@ -117,7 +117,7 @@ Angka ini **hanya untuk mengecek prototype jalan**, **bukan** data untuk laporan
 | whisper-base | WebGPU | 1,2–2,1 s |
 | whisper-base | WASM | 1,6–1,9 s |
 
-Semua menghasilkan transkrip yang sama untuk kalimat uji bahasa Inggris. Bahasa Indonesia **belum diuji** dengan suara asli.
+Semua menghasilkan transkrip yang sama untuk kalimat uji bahasa Inggris. Bahasa lain (termasuk Indonesia) **belum diuji** dengan suara asli.
 
 Uji end-to-end (whisper-tiny, WebGPU, file audio diputar real-time):
 - Teks parsial ter-update saat "bicara": `Good morning, every` → `… Today` → `… how speech` → `… can help people from` → final + terjemahan.
@@ -130,7 +130,7 @@ Uji end-to-end (whisper-tiny, WebGPU, file audio diputar real-time):
 - Whisper bukan model streaming asli: parsial = transkripsi ulang buffer yang bertambah, jadi teks parsial bisa "berubah-ubah".
 - VAD masih berbasis energi, jadi gampang salah di tempat bising.
 - MyMemory: kuota gratis ±5.000 karakter/hari, kualitas naik-turun (sudah dipaksa pakai hasil mesin, bukan translation memory).
-- Suara TTS Bahasa Indonesia tergantung browser/OS (Edge: "Microsoft Gadis Online", Chrome: "Google Bahasa Indonesia").
+- Suara TTS tiap bahasa tergantung browser/OS (contoh Indonesia: Edge "Microsoft Gadis Online", Chrome "Google Bahasa Indonesia"). Kalau suaranya tidak ada, terjemahan tetap tampil sebagai teks.
 
 ---
 
@@ -138,7 +138,7 @@ Uji end-to-end (whisper-tiny, WebGPU, file audio diputar real-time):
 
 1. **Fase 0: Prototype** ✅ (sekarang). End-to-end jalan: ASR lokal streaming → terjemahan → TTS.
 2. **Fase 1: Problem & target user.** Tentukan masalah nyata + siapa user-nya, karena ini menentukan bahasa, skenario, dan kondisi eksperimen. *Harus diputuskan paling awal.*
-3. **Fase 2: Perbaikan inti.** Turunkan latency, uji akurasi Bahasa Indonesia, terjemahan yang lebih bagus/lokal, UI sesuai skenario user.
+3. **Fase 2: Perbaikan inti.** Turunkan latency, uji akurasi di beberapa bahasa (mulai dari Indonesia), terjemahan yang lebih bagus/lokal untuk semua pasangan bahasa, tambah bahasa, UI sesuai skenario user.
 4. **Fase 3: Evaluasi teknis.** Dataset rekaman, baseline + kondisi (noise/aksen/kecepatan), WER/CER, latency, error analysis.
 5. **Fase 4: User testing.** ≥ 5 target user nyata → feedback → perbaikan → analisis gabungan.
 6. **Fase 5: Laporan & demo.** Technical report (§15) dan bukti (§16).
