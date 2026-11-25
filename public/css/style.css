@@ -292,8 +292,8 @@ body.eval .line__meta {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 14px 24px 26px;
+  gap: 20px; /* ruang untuk cincin level suara di sekitar mic */
+  padding: 18px 24px 24px;
 }
 
 .mic {
@@ -324,7 +324,7 @@ body.eval .line__meta {
   border-radius: 50%;
   border: 2px solid var(--rec);
   opacity: 0;
-  transform: scale(calc(1 + var(--level) * 0.35));
+  transform: scale(calc(1 + var(--level) * 0.2));
   transition: transform 0.08s linear, opacity 0.2s var(--ease);
 }
 
@@ -706,8 +706,8 @@ body.eval .line__meta {
   }
 
   .half__foot {
-    gap: 8px;
-    padding: 10px 20px max(16px, env(safe-area-inset-bottom));
+    gap: 16px;
+    padding: 14px 20px max(14px, env(safe-area-inset-bottom));
   }
 
   .only-narrow {
